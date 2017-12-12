@@ -1,0 +1,135 @@
+## title page
+
+开场&介绍
+
+## P1
+
+This is our system architecture. I will give this talk in four parts. 
+data preprocessing. 
+candidates generation. 
+ranking 
+and results analysis.
+
+## P2 preprocessing
+
+Unlike that English words in a sentence are separated naturaly, so the word segmentation is the first step for all nlp of chinese. However, the tool and PKU standard we choose, only support simplified chinese, traditional Chinese in raw data will cause word segmentation incorrect, so we convert traditional Chinese to simplified. Moreover, we convert full-width characters into half-width ones. 
+
+After segmentation, we replace all the number, datetime, url with token <\_NUM>, <\_TIME>, <\_URL> respectively. In addition, we filter meaningless words and symbols according to the stop words list in order to improve the performance.
+
+the first table shows why we need to convert it, Before conversion, some words can not be correctly segmented, such as 美国（the USA）, 宫保鸡丁（Kung Pao Chicken）and 感觉（feeling.
+
+The second shows the result of token replacement, which can reduce the size of vocabulary and decrease the computation cost.
+
+The number, datetime and url can be replaced by any other same type of content and it will not change the semantic meaning of the sentence, but if we eliminate them directly, the semantic meaning would change. so we use these token to replace them.
+
+## Similarity Features
+
+In order to compute the similarity or relateness between two sentences, we need convert the text into vector representations with some techniques including TF-IDF, LSA, LDA, Word2Vec(SG) and LSTM-Sen2Vec we devised. While not using TF-IDF as the similarity feature directly, it would participate in training LDA, LSA models and calculate the similarity score by using Word2Vec.
+
+When training TF-IDF And Word2Vec models, we input text sentence by sentence. While training LSA and LDA models we combine each post with its corresponding comments to be a document and feed it as input.
+
+In the following, I will only focus on the illustration of the last model, since we are familiar with the others.
+
+## LSTM
+
+Long short-term memory (LSTM) is a recurrent neural network (RNN) architecture 
+that remembers values over arbitrary intervals. Figure 2 shows the architecture 
+of LSTM. The C sub t represents the cell state at time t and it is stored as a vector, which can theoretically remember all the previous information. The h sub t represents current hidden state, which is also a output value at time t.
+
+## LSTM-Sen2Vec
+
+Mikolov and Zaremba et al. use LSTM to train the language model, base on the characteristic of LSTM, it can predict the next word given the previous words as input and achieve a good perplexity.
+
+The C sub t represents the cell state at time t and it is stored as a vector, which can theoretically remember all the previous information. The h sub t represents current hidden state, which is also a output value at time t.
+
+the better the hidden state fit the next word, the more information will be caught by the cell state. 
+
+So we suppose that, the Cell state can be used to represent the  sentence which we input.
+
+We use unidirectional lstm to train that model and found that 
+
+if use the Cell state as sentence vector to calculate the similarity between two sentences, it will pay more attention to the tail of sentence, but less for the head. the longer the worse.
+
+In order to deal with that problem, we choose the bi-directional lstm alternatively to make the attention balance. it seems work
+
+The traditional bidirectional lstm has a problem when training the language model, it doesn’t make sense if we concatenate the outputs of forward and backward at the same time step.
+
+So we modity it as figure 7,  As fiugure shows that, we delay the output of backward and add the last output of forward to backward, and vice versa. then both direction will predict the same word at each time step.
+
+it seems more intuitive and rational just like us doing a sentence fill-ins when the neural networks predict the word.
+
+and the result shows the modification of model is effective.
+
+
+
+## Candidates Generation
+
+Based on a hypothesis that similar posts has similar corresponding comments, we firstly find top-10 similar posts
+with a ranking score combining LSA, LDA, Word2Vec, and
+LSTM models.
+
+Here, q denotes the query (the new post) and p denotes the post in the repository. 
+
+Then, we get corresponding comments to the top-10 similar posts as the first comment candidates
+
+Considering that not all the new post has similar enough posts in the repository, we combine LSA/LDA with Word2Vec to directly retrieve top-N appropriate comments to the new post from all comments in the repository. N is equal to the number of the first comment candidates.
+
+## Ranking
+
+After generating comment candidates, we use TextRank and Pattern-IDF to rank them. TextRank is a graph-based ranking model which can take words or sentences as vertices. Pattern-IDF is a ranking score we devised based on statistical analysis
+
+## TextRank - A graph-based ranking model
+    it just like pagerank algorithm, using words or sentences to be the vertices, and W2V as the edge.
+## TextRank - Vertices and Edges
+看PPT
+## TextRank - Calculate Iteratively
+看PPT
+## TextRank - Ranking
+看PPT
+## Pattern-IDF
+the reason why we compute the Pattern-IDF as equation(13)
+first we set X equal to that (equation (14))......  and the X ranges from one to infinity, the more important the pattern is, the value of X will be more close to one. the value of log(X) will be more close to zero and value of one over log(X) will be bigger.
+
+and as the figure 8 and 9 show that. 
+low quality patterns' value are small and dense, high quality patterns' value are big and sparse.
+
+we want to guarantee that the score of the high quality patterns will have a significant difference, while that of low quality patterns will be in a small range.
+
+the factor we design can achieve that
+
+the picture 8 show the
+table 1 shows that PI value within a same major word. we can see that ,  high PI value reprensent high quality patten of major word and minor word. vice versa.
+
+In order to verify the PI value work or not , we calculate the entropy within the same major word according equation 14 15 as table 2 shows.
+
+the smaller value of entropy means that the minor words within a major word are more discriminate and Topically-related. the function word gets a high value of entropy, so it proof that the PI value is effective.
+
+and the score of entropy maybe can be use to be the word's weight in our future research will to try it.  
+
+
+## PI - Ranking
+看PPT
+## TextRank + Pattern-IDF
+看PPT
+## Experiment
+
+In R5, we use LDA, Word2Vec and LSTM-Sen2Vec to retrieve similar posts and get corresponding comments, LDA and Word2Vec to retrieve appropriate comments from all comments, combine and rank them with $Score_{q,c}^1(q, c)$ and get top-10 comments as results.
+Nders-C-R4:  Use LSA, Word2Vec and LSTM-Sen2Vec to retrieve similar posts and get corresponding comments, LSA and Word2Vec to retrieve appropriate comments from all comments, combine and rank them with $Score_{q,c}^2(q, c)$ and  get top-10 comments as results.
+Nders-C-R3:  Use graph-based algorithm TextRank with words as vertices in the graph, and use score $Rank_{TextRank}$ to rank the comment candidates from R4 and get top-10 comments.
+Nders-C-R2:  Use $Rank_{PI}$ as a ranking score to rank comment candidates from R4 and get top-10 comments.
+Nders-C-R1:  Use graph-based algorithm TextRank with comments as vertices in the graph and Pattern-IDF as initiate score for each comment to rank the comment candidates from R4 and get top-10 comments.
+
+## results
+
+The official results of our five runs are shown in Table 3. Which shows that, with the use of Word2Vec and LSA model, R4 achieves 
+best result in our five runs for Mean nG@1, that ranks 4th among 22 teams. 
+
+The best results in our runs for Mean P+ and Mean nERR@10 are both R2, which introduces Pattern-IDF to rank the candidates generated by Word2Vec and LSA model(R4). The result of R2 improves against R4 by 2.02% for mean P+ and 1.26% for mean nERR@10 and both ranks 5th among 22 teams, with 0.77% slightly decreased for mean nG@1. It proves the effectiveness of the Pattern-IDF we devised. In this expriment, the Pattern-IDF is a coarse factor, after some modification it may perform better such, as eliminate some function word, etcetera.
+
+However, the results of R3, R1 are worse than that of R4 for all three metrics, which shows TextRank is not helpful for candidates ranking in this task.
+
+
+
+......
+
+Thank you, any questions?

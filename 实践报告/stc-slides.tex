@@ -1,0 +1,449 @@
+\documentclass[aspectratio=169]{beamer}
+\usepackage{geometry}
+
+\usetheme{metropolis}           % Use metropolis theme
+\usefonttheme[onlymath]{serif}
+
+\usepackage{xeCJK}
+%\usepackage{CJKutf8}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{multicol}
+\usepackage[font=small,labelfont=bf]{caption}
+\DeclareCaptionFont{mysize}{\fontsize{7}{9.6}\selectfont}
+\captionsetup{font=mysize}
+
+\usepackage{textpos}
+\usepackage{adjustbox}
+\usepackage{pdfpages}
+
+\newcommand\Fontvi{\fontsize{8}{7.2}\selectfont}
+
+\title{实习实践报告：短文本对话}
+\author{报告人：林连升 \\ 校内导师：叶东毅 \ 教授 \\ 企业导师：关胤}
+\institute{实习单位：福建天晴在线互动科技有限公司}
+\date{}
+
+%\logo{\includegraphics[height=1.2cm,width=1.35cm]{logo}}
+
+\titlegraphic{\hspace*{11.2cm} \includegraphics[height=3cm,width=3.38cm]{logo}
+}
+
+\begin{document}
+  \maketitle
+
+  \addtobeamertemplate{frametitle}{}{%
+  \begin{textblock*}{100mm}(.96\textwidth,-1.1cm)
+  \includegraphics[height=1.2cm,width=1.35cm]{logo}
+  \end{textblock*}}
+
+    \begin{frame}{短文本对话}
+      
+      \begin{figure}
+      \includegraphics[width=10cm,height=5.09cm]{stc2-ir-task.png}
+      \caption{基于检索的方法}
+      \end{figure}
+
+    \end{frame}
+
+    \begin{frame}{相关性评估}
+      评估检索出的评论主要遵循以下四个准则:
+      \begin{enumerate}
+        \item Fluent
+        \item Coherent: logically and topically relevant 
+        \item Self-sufficient
+        \item Substantial
+      \end{enumerate}
+      If either (1) or (2) is untrue, the retrieved comment should be labeled "L0"; if either (3) or (4) is untrue, the label should be "L1"; otherwise, the label is "L2".
+    \end{frame}
+
+        \begin{frame}{Labels}
+          \begin{center}
+            \begin{figure}
+            \includegraphics[width=4in,height=2.25in]{stc-labels.png}
+            \caption{一条微博以及人工标注的五条候选评论}
+            \end{figure}
+          \end{center}
+        \end{frame}
+
+    \begin{frame}{System Architecture}
+      \begin{figure}
+      \includegraphics[width=14cm,height=4.63cm]{stc-flow-big.png}
+      \caption{System Architecture}
+      \end{figure}
+    \end{frame}
+
+    \begin{frame}{文本预处理}
+      \begin{itemize}
+        \item 繁简转换
+        \item 全角转半角
+        \item 分词 （pynlpir, PKU标准）
+        \item token替换（<\_NUM>, <\_TIME>, <\_URL>）
+        \item 过滤无意义的词和特殊符号
+      \end{itemize}
+    \end{frame}
+
+    {
+    \setbeamercolor{background canvas}{bg=}
+    \includepdf[pages=1]{test.pdf}
+    }
+
+    \begin{frame}{相似度特征}
+      \begin{itemize}
+        \item TF-IDF
+        \item LSA (Latent Semantic Analysis)
+        \item LDA (Latent Dirichlet Allocation)
+        \item Word2Vec (skip-gram)
+        \item \textbf{LSTM-Sen2Vec }
+      \end{itemize}
+
+      我们将每条微博和它的所有评论合并成一个文档，然后对这些文档训练LSA和LDA模型。其他模型是以句子作为输入。
+    \end{frame}
+
+    \begin{frame}{LSTM}
+      \begin{columns}
+      \begin{column}[t]{0.5\textwidth}
+        \begin{equation}
+           f_t = \sigma(W_f \cdot [h_{t-1}, x_t] + b_f)
+        \end{equation}
+        \begin{equation}
+           i_t = \sigma(W_i \cdot [h_{t-1}, x_t] + b_i)
+        \end{equation}
+        \begin{equation}
+           \tilde{C}_t = tanh(W_C \cdot [h_{t-1}, x_t] + b_C) 
+        \end{equation}
+        \begin{equation}
+           C_t = f_t * C_{t-1} + i_t * \tilde{C}_t
+        \end{equation}
+        \begin{equation}
+           o_t = \sigma(W_o \cdot [h_{t-1}, x_t] + b_o)
+        \end{equation}
+        \begin{equation}
+           h_t = o_t * tanh(C_t)
+        \end{equation}
+      \end{column}
+
+      \begin{column}[t]{0.5\textwidth}
+        \begin{figure}
+        \includegraphics[height=1.5in, width=2.44in]{lstm2.png}
+        \caption{LSTM 单元}
+        \end{figure}
+      \end{column}
+
+      \end{columns}
+      \vspace*{2em}
+
+      \tiny
+      Mikolov, Toma's. Statistical Language Models Based on Neural Networks. Ph.D. thesis, Brno University of Technology.(2012)
+
+      Zaremba, Wojciech, I. Sutskever, and O. Vinyals. Recurrent Neural Network Regularization. Eprint Arxiv (2014).
+    \end{frame}
+
+    \begin{frame}{Attention weight}
+      \begin{columns}
+      \begin{column}[t]{0.5\textwidth}
+        \begin{figure}
+        \includegraphics[width=6.4cm,height=4.8cm]{forward.png}
+        \caption{Unidirectional weight distribution}
+        \end{figure}
+      \end{column}
+
+      \begin{column}[t]{0.5\textwidth}
+        \begin{figure}
+        \includegraphics[width=6.4cm,height=4.8cm]{bidirectional.png}
+        \caption{bidirectional weight distribution}
+        \end{figure}
+      \end{column}
+
+      \end{columns}
+    \end{frame}
+
+    \begin{frame}{LSTM-Sen2Vec}
+      \begin{columns}
+      \begin{column}[t]{0.5\textwidth}
+        \begin{figure}
+        \includegraphics[width=6.7cm,height=3.2cm]{unilstm.png}
+        \caption{The Unidirectional LSTM}
+        \end{figure}
+      \end{column}
+
+      \begin{column}[t]{0.5\textwidth}
+        \begin{figure}
+        \includegraphics[width=6cm,height=3.2cm]{bilstm1.png}
+        \caption{The Traditional Bidirectional LSTM}
+        \end{figure}
+      \end{column}
+
+      \end{columns}
+    \end{frame}
+
+    \begin{frame}{LSTM-Sen2Vec}
+      \begin{figure}
+        \includegraphics[width=12cm,height=6cm]{bilstm2.png}
+        \caption{The Modified Bidirectional LSTM}
+        \end{figure}
+    \end{frame}
+
+    \begin{frame}{生成候选集}
+      \begin{itemize}
+      \item 相似的微博
+      \begin{equation}
+         Score_{q,p}^1(q, p) = Sim_{LDA}(q, p) * Sim_{W2V}(q, p) * Sim_{LSTM}(q, p)
+      \end{equation}
+      \begin{equation}
+         Score_{q,p}^2(q, p) = Sim_{LSA}(q, p) * Sim_{W2V}(q, p) * Sim_{LSTM}(q, p)
+      \end{equation}
+      \item 候选评论
+      \begin{equation}
+         Score_{q,c}^1(q, c) = Sim_{LSA}(q, c) * Sim_{W2V}(q, c)
+      \end{equation}
+      \begin{equation}
+         Score_{q,c}^2(q, c) = Sim_{LDA}(q, c) * Sim_{W2V}(q, c)
+      \end{equation}
+    \end{itemize}
+    \end{frame}
+
+    \begin{frame}{排序}
+      \begin{itemize}
+        \item TextRank (Words as vertices)
+        \item Pattern-IDF
+        \item Pattern-IDF + TextRank (Sentences as vertices)
+      \end{itemize}
+    \end{frame}
+
+    \begin{frame}{TextRank - 一个基于图的排序算法}
+      设$G = (V; E)$为一个由点集V和边集E构成的无向图，其中$E$ 是 $V \times V$的子集. 对于一个给定的点$V_i$, 设$link(V_i)$为与其相连的点的集合. 则一个点$V_i$的分数定义如下:
+      \begin{equation}
+        WS(V_i) = (1 - d) + d * \sum_{j \in link(V_i)}{w_{ij} * WS({V_j})}
+      \end{equation}
+      其中$d$是一个damping factor\footnotemark，通常设为0.85.
+
+      \footnotetext{Brin, Sergey, and L. Page. The anatomy of a large-scale hypertextual Web search engine. International Conference on World Wide Web Elsevier Science Publishers B. V. 1998:107-117.}
+    \end{frame}
+
+    \begin{frame}{TextRank - Vertices and Edges}
+      \begin{itemize}
+        \item Vertices: 候选评论中的每个词
+        \item Edges: 共现关系
+        \item Weighted by: word2vec 相似度和共现次数
+      \end{itemize}
+    \end{frame}
+
+    \begin{frame}{TextRank - Calculate Iteratively}
+      对于$N$个候选评论, $k$个词语, 我们构建一个 $ k \times k $ 的矩阵 $M$. 其中$M_{ij} = cnt * sim(D_i, D_j)$. 然后我们迭代计算
+      \[
+      R(t+1) = 
+      \begin{bmatrix}
+          (1-d)/k       \\
+          (1-d)/k       \\
+          \hdotsfor{1} \\
+          (1-d)/k       
+      \end{bmatrix}
+      +d
+      \begin{bmatrix}
+          M_{11} & M_{12} & M_{13} & \dots  & M_{1k} \\
+          M_{21} & M_{22} & M_{23} & \dots  & M_{2k} \\
+          \vdots & \vdots & \vdots & \ddots & \vdots \\
+          M_{k1} & M_{k2} & M_{k3} & \dots  & M_{kk}
+      \end{bmatrix}
+      R(t)
+      \]
+      %$R(0) = [IDF(D_0) \ IDF(D_1) \ ... \ IDF(D_{k-1})]^T$ \newline
+      Stop when $|R(t+1)-R(t)|<\epsilon$, $\epsilon = 10^{-7}$. \\
+      这里, $cnt$ 表示$D_i$ 和 $D_j$在一个句子中共现的次数. \\
+    \end{frame}
+
+    \begin{frame}{TextRank - Ranking}
+      既然我们得到候选评论中每个词 $D_i$的分数$R(D_i)$, 那么每个候选评论$c$的分数可以按下列式子计算:
+      \begin{equation}
+        Rank_{TextRank}(c) = \frac{\sum_{D_i \in c}{R(D_i)}}{len(c)} 
+      \end{equation}
+      这里, $len(c)$ 表示候选评论中词语的个数.
+    \end{frame}
+
+    \begin{frame}{Pattern-IDF}
+      对于微博中的一个词语$D_j$和相应评论中的一个词语$D_i$，我们定义($D_j$,$D_i$)为一个pattern.
+
+      受到TF-IDF的启发, 我们定义Pattern-IDF为:
+      \begin{equation}
+        PI(D_i|D_j) = 1 / \log_2{\frac{count_c(D_i) * count_p(D_j)}{count_{pair}(D_i, D_j)}}
+      \end{equation}
+      这里，$count_c$表示词语出现在评论中的次数, $count_p$ 表示词语出现在微博中的次数, $count_{pair}$表示($D_j$,$D_i$)的个数. $count_{pair}(D_i, D_j)$小于3的PI将被移除.
+
+    \end{frame}
+
+    \begin{frame}{Pattern-IDF}
+      Let $X = \frac{count_c(D_i) * count_p(D_j)}{count_{pair}(D_i, D_j)}$, then $X \in [1, \infty)$.
+      \begin{columns}[T] % align columns
+      \begin{column}{.48\textwidth}
+      
+      \begin{figure}
+      \includegraphics[width=6.4cm,height=4.8cm]{pi1.png}
+      \caption{log(X)}
+      \end{figure}
+      
+      \end{column}%
+      \hfill%
+      \begin{column}{.48\textwidth}
+      
+        \begin{figure}
+        \includegraphics[width=6.4cm,height=4.8cm]{pi2.png}
+        \caption{1/log(x)}
+        \end{figure}
+
+      \end{column}%
+      \end{columns}
+    \end{frame}
+
+    \begin{frame}{PI - Example}
+      \begin{columns}[T] % align columns
+      \begin{column}{.48\textwidth}
+      \begin{table}[small]
+        \centering
+        \caption{The example of Pattern-IDF}
+        \resizebox{\linewidth}{!}{% Resize table to fit within \linewidth horizontally
+        \begin{tabular}{lll}
+        \hline
+         $Major Word$ & $Minor Word$ & $PI$ \\ \hline
+         中国移动 (China Mobile) & 接通 (connect)   & 0.071725 \\ \hline
+         中国移动 & cmcc                                  & 0.067261 \\ \hline
+         中国移动 & 资费 (charges)   & 0.062408 \\ \hline
+         中国移动 & 营业厅 (business hall
+        ) & 0.059949 \\ \hline
+         中国移动 & 漫游 (roamimg)   & 0.059234 \\ \hline
+         ... & ...  & ...  \\ \hline
+         中国移动 & 我 (me)   & 0.028889 \\ \hline
+         中国移动 & 是 (be)   & 0.027642 \\ \hline
+         中国移动 & 的 (of)   & 0.026346 \\ \hline
+        \end{tabular}}
+        \end{table}
+
+      
+      \end{column}%
+      \hfill%
+      \begin{column}{.48\textwidth}
+      \begin{table}[small]
+        \centering
+        \caption{The entropy of Pattern-IDF for each Major Word}
+        \resizebox{.65\linewidth}{!}{% Resize table to fit within \linewidth horizontally
+        \begin{tabular}{ll}
+        \hline
+         $Major Word$   & H \\ \hline
+         眼病  (eye disease)     & 0.889971 \\ \hline
+         丰收年 (harvest year)      & 0.988191 \\ \hline
+         血浆 (plasma)            & 1.033668 \\ \hline
+         脊椎动物 (vertebrate)    &  1.083438 \\ \hline
+         水粉画 （gouache painting）&  1.180993 \\ \hline
+         ...            & ...        \\ \hline
+         现在 (now)     & 9.767768   \\ \hline
+         什么 (what)  & 10.219045  \\ \hline
+         是 (be)         & 10.934950   \\ \hline
+        \end{tabular}}
+        \end{table}
+
+        
+      \end{column}%
+
+      \end{columns}
+      
+      \begin{equation}
+      \Fontvi
+      PI_{norm}(D_i|D_j) = \frac{PI(D_i|D_j)}{\sum_{i=1}^n{PI(D_i|D_j)}}
+      \end{equation}
+      \begin{equation}
+      \Fontvi
+      H(D_j) = - \sum_{i=1}^n{PI_{norm}(D_i|D_j)\log_2{PI_{norm}(D_i|D_j)}}
+      \end{equation}
+
+    \end{frame}
+
+    \begin{frame}{PI - Ranking}
+      For each comment $c$ in candidates, given a query (new post) $q$, we 
+      calculate the score by $PI$ as follow:
+      \begin{equation}
+        Score_{PI}(q, c) = \frac{\sum_{D_j \in q}{\sum_{D_i \in c}{PI(D_i|D_j)}}}{len(c) * len(q)}
+      \end{equation}
+      Then we define rank score as follow:
+      \begin{equation}
+        Rank_{PI} = (1 + \frac{Score_{PI}(q, c)}{\max{Score_{PI}(q, c)}}) * Sim_{W2V}(q, c)*Sim_{LSA}(q, c)  
+      \end{equation}
+    \end{frame}
+
+    \begin{frame}{TextRank + Pattern-IDF}
+      In this method, We add each comment sentence in candidates as a vertex in the graph and use sentence Word2Vec similarity as edges between vertices in the graph.
+
+      For $N$ candidates, we construct $ N \times N $ matrix $M$. $M_{ij} = Sim_{w2v}(candidate_i, candidate_j)$. 
+
+      At time $t = 0$, We initiate a N-dimension vector $P$ , here $N$ is the number 
+      of comment candidates. And each entry of $P$ is defined as the score of Pattern-IDF between the query (new post) $q$ and corresponding comment $c_i$ in candidates:
+      \begin{equation}
+        P_i = Score_{PI}(q, c_i)
+      \end{equation}
+    \end{frame}
+
+    \begin{frame}{TextRank + Pattern-IDF}
+      Then we compute iteratively
+      \[
+      R(t+1) = 
+      \begin{bmatrix}
+          (1-d)/N       \\
+          (1-d)/N       \\
+          \hdotsfor{1} \\
+          (1-d)/N       
+      \end{bmatrix}
+      +d
+      \begin{bmatrix}
+          M_{11} & M_{12} & M_{13} & \dots  & M_{1N} \\
+          M_{21} & M_{22} & M_{23} & \dots  & M_{2N} \\
+          \vdots & \vdots & \vdots & \ddots & \vdots \\
+          M_{N1} & M_{N2} & M_{N3} & \dots  & M_{NN}
+      \end{bmatrix}
+      R(t)
+      \]
+      Stop when $|R(t+1)-R(t)|<\epsilon$, $\epsilon = 10^{-7}$
+
+      Finally, we get the score $P_i$ for each comment in candidates. 
+    \end{frame}
+
+  \begin{frame}{Experiment}
+    \begin{itemize}
+      \item{Nders-C-R5: } LDA + Word2Vec + LSTM-Sen2Vec 
+      \item{Nders-C-R4: } LSA + Word2Vec + LSTM-Sen2Vec 
+      \item{Nders-C-R3: } R4 + TextRank (Words as vertices)
+      \item{Nders-C-R2: } R4 + Pattern-IDF 
+      \item{Nders-C-R1: } R4 + Pattern-IDF + TextRank (Sentences as vertices)
+    \end{itemize}
+  \end{frame}
+
+  \begin{frame}{官方结果}
+    \begin{table}
+\centering
+\caption{The official results}
+\label{tab:commands}
+\begin{minipage}{\columnwidth}
+\begin{center}
+\begin{tabular}{|l|c|c|c|}
+\hline
+ Run        &  Mean nG@1  &  Mean P+  &  Mean nERR@10  \\ \hline
+ Team 1 & 0.5867 & 0.6670 & 0.7095 \\ \hline
+ Team 2 & 0.5080 & 0.6080 & 0.6492 \\ \hline
+ Team 3 & 0.4980 & 0.5818 & 0.6105 \\ \hline
+ Nders-C-R1 & 0.4593 & 0.5394 & 0.5805 \\ \hline
+ Nders-C-R2 & 0.4743 & \textbf{0.5497(5th)} & \textbf{0.5882(5th)} \\ \hline
+ Nders-C-R3 & 0.4647 & 0.5317 & 0.5768 \\ \hline
+ Nders-C-R4 & \textbf{0.4780(4th)} & 0.5338 & 0.5809 \\ \hline
+ Nders-C-R5 & 0.4550 & 0.5495 & 0.5868 \\ \hline
+ \textcolor{red}{R2 \ vs. \  R4}  & \textcolor{red}{$\downarrow$0.77\%} & \textcolor{red}{$\uparrow$2.98\%} & \textcolor{red}{$\uparrow$1.26\%} \\ \hline
+
+\end{tabular}
+\end{center}
+\end{minipage}
+\end{table}
+  \end{frame}
+
+  \begin{frame}[standout]
+    Questions?
+  \end{frame}
+
+\end{document}
+

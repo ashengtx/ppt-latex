@@ -1,0 +1,74 @@
+\documentclass[aspectratio=169]{beamer}
+
+\usetheme{metropolis}           % Use metropolis theme
+\usefonttheme[onlymath]{serif}
+
+%\usepackage{xeCJK}
+\usepackage{CJKutf8}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{multicol}
+\usepackage[font=small,labelfont=bf]{caption}
+\DeclareCaptionFont{mysize}{\fontsize{7}{9.6}\selectfont}
+\captionsetup{font=mysize}
+\usepackage{adjustbox}
+
+
+\begin{document}
+\setbeamertemplate{frame numbering}{\ }{}
+
+\begin{frame}
+
+\begin{table}
+\centering
+%\caption{The preprocessing result}
+\resizebox{.9\linewidth}{!}{
+\begin{tabular}{l@{\qquad}l}
+\hline\noalign{\smallskip}
+Short Text ID & test-post-10440 \\
+\noalign{\smallskip}
+\hline
+\noalign{\smallskip}
+Raw Text          & \begin{CJK}{UTF8}{bsmi}去到美國，\begin{CJK}{UTF8}{gbsn}还\end{CJK}是吃中餐！宮保雞丁家的感覺～\end{CJK}  \\ 
+ & Go to the USA, still eat Chinese food, Kung Pao Chicken, feeling like at home \\
+\hline
+\noalign{\smallskip}
+Without T-S Conversion  & \begin{CJK}{UTF8}{bsmi}去 到 美 國 , \begin{CJK}{UTF8}{gbsn}还\end{CJK} 是 吃 中餐 ! 宮 保 雞 丁 家 的 感 覺 \end{CJK} \~{} \\
+\hline
+\noalign{\smallskip}
+With T-S Conversion   & \begin{CJK}{UTF8}{gbsn}去 到 美国 , 还 是 吃 中餐 ! 宫保鸡丁 家 的 感觉 \~{}\end{CJK}   \\
+\hline
+\noalign{\smallskip}
+Clean Result   & \begin{CJK}{UTF8}{gbsn}去 到 美国 还 是 吃 中餐 宫保鸡丁 家 的 感觉\end{CJK}   \\
+\hline
+\end{tabular}}
+\end{table}
+
+\begin{table}
+\centering
+%\caption{The preprocessing result}
+\resizebox{.9\linewidth}{!}{
+\begin{tabular}{l@{\qquad}l}
+\hline\noalign{\smallskip}
+Short Text ID & test-post-10640 \\
+\noalign{\smallskip}
+\hline
+Raw Text & \begin{CJK}{UTF8}{gbsn}汶川大地震9周年：29个让人泪流满面的瞬间。\end{CJK}\\
+& 9th Anniversary of Wenchuan Earthquake: 29 moments making people tearful\\
+\hline
+\noalign{\smallskip}
+Without token replacement & \begin{CJK}{UTF8}{gbsn}汶川 大 地震 9 周年 : 29 个 让 人 泪流满面 的 瞬间 。\end{CJK} \\
+\hline
+\noalign{\smallskip}
+With token replacement & \begin{CJK}{UTF8}{gbsn}汶川 大 地震 $<$\_NUM$>$ 周年 : $<$\_NUM$>$ 个 让 人 泪流满面 的 瞬间 。\end{CJK} \\
+\hline
+\noalign{\smallskip}
+Clean Result & \begin{CJK}{UTF8}{gbsn}汶川 大 地震 $<$\_NUM$>$ 周年 $<$\_NUM$>$ 个 让 人 泪流满面 的 瞬间 \end{CJK} \\
+\hline
+
+\end{tabular}}
+\end{table}
+
+\end{frame}
+
+\end{document}
